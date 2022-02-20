@@ -38,7 +38,9 @@ contract Staker {
 	// assume reward is in proportion to staked amount and blocks passed
 	function claim (
 	) public {
-		require( _balances[msg.sender ] >= _mint_balance_to_qualify_for_claim , "ERR() does not meet min balance" ) ;
-
+		require ( _balances[msg.sender ] >= _mint_balance_to_qualify_for_claim , "ERR() does not meet min balance" ) ;
+		require ( _rewards[ msg.sender]>0 , "ERR() none claimable" );
+		IERC20( _token_to).transfer ()
+		
 	}
 }
