@@ -25,7 +25,34 @@ contract StableSwap {
 		, uint256 _amount
 		, address _to
 	) ;
+	function mybalance (address _tokenaddress) public returns ( uint256 ) {
+		return IERC20(_tokenaddress ).balanceOf ( address (this ));
+	}
 	function withdraw (
+		address _token_from 
+		, address _token_to
+		, uint256 _amount
+		, address _to
+	) public {
+		require ( _balances[ msg.sender ] >= _amount , "ERR() balance not enough" ) ;
+		require ( IERC20( _token_from ).balanceOf( address(this )) >= _amount , "ERR() reserve not enough" );
+		require ( _last_deposit_time[ msg.sender ] - block.timestamp >= _min_lockup_period , "ERR() min lockup period required");
+		if ( IERC20( _token_from ).transferFrom ( msg.sender , address(this) , _amount ) ){
+			IERC20(_token_from ).burn ( _amount);
+			IERC20(_token_to ).transfer ( _to , _amount );
+		}
+		else {} // 
+		_balances [ msg.sender ] -= _amount ;
+		_last_withdraw_time [ msg.sender ] = block.timestamp ;
+		emit Withdrawn (
+			 _token_from //
+			,  _token_to
+			,  _amount
+			,  _to
+		) ;
+	}
+
+	function XXXwithdraw (
 		address _token_from // not referenced for now, since withdraw source is pooled one
 		, address _token_to
 		, uint256 _amount
@@ -33,7 +60,7 @@ contract StableSwap {
 	) public {
 		require ( _balances[ msg.sender ] >= _amount , "ERR() balance not enough" ) ;
 		require ( IERC20( _token_to).balanceOf( address(this )) >= _amount , "ERR() reserve not enough" );
-		require ( _last_deposit_time[ msg.sender ] - block.timestamp >= _min_lockup_period , "ERR() min lockup required");
+		require ( _last_deposit_time[ msg.sender ] - block.timestamp >= _min_lockup_period , "ERR() min lockup period required");
 		if ( IERC20( _token_to).transfer ( _to , _amount ) ){}
 		else {} // fail case due to recipient not able to receive , but go on for now
 		_balances [ msg.sender ] -= _amount ;
@@ -58,11 +85,28 @@ contract StableSwap {
 		, uint256 _amount_from
 		, address _to
 	) public {
-		if ( IERC20( _token_from ).transferFrom ( msg.sender , _amount_from )) {}
+		if (IAdmin( _admin )._stable_tokens( _token_from) || IAdmin( _admin )._custom_stable_tokens( _token_from)) {}
+		else {}
+		if (IAdmin( _admin )._stable_tokens( _token_to ) || IAdmin( _admin )._custom_stable_tokens( _token_to )) {}
+		else {}
+		if ( IAdmin( _admin)._blacklist( msg.sender) ){revert("ERR() caller blacklisted"); }
+		else {}
+
+		if ( IERC20( _token_from ).transferFrom ( msg.sender , address(this ) , _amount_from )) {}
 		else {revert("ERR() balance not enough"); }
 		uint256 feerate = IAdmin( _admin )._fees ( "STABLE_SWAP" ) ;
 		if(feerate == 0){}
-		else {}
+		else {
+			uint256 feeamount_00 = _amount_from * 10 / 10000 ;
+			uint256 feeamount_01 = 2 * 10**17/10**18 ;
+			uint256 feeamount = feeamount_00> feeamount_01? feeamount_00 : feeamount_01;
+			address feecollector = IAdmin( _admin )._feecollector ( ) ;
+			address feetaker = IAdmin( _admin )._feetaker () ;
+			if (feecollector != address(0)){ IERC20( _token_from).transfer (feecollector , feeamount /2 );
+			} else {}
+			if ( feetaker != address(0)){			IERC20( _token_from ).transfer (feetaker , feeamount / 2 );
+			} else {}
+		}
 		if (IERC20( _token_to).mint ( _to , _amount_from ) ){}
 		else {revert ("ERR() mint fail"); }
 		_balances[ _to ] += _amount_from ;

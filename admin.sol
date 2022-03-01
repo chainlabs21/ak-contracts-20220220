@@ -13,12 +13,18 @@ contract Admin {
 	uint256 public _min_stake_period = 3600 * 24 * 7; // a week
 	uint256 public _min_stake_amount = 1*10**18 ;
 	address public _feecollector ;
+	address public _feetaker ;
 	mapping ( address => mapping( address => bool )) public _allowed_swap_pairs ;
-
+	mapping ( address => bool ) public _blacklist ;
 	modifier onlyowner_or_admin (address _address) {
 		require ( _address == _owner || _admins[ _address] , "ERR() not privileged");
 		_ ;
 	}
+	function set_blacklist ( address _address , bool _status ) public onlyowner_or_admin (msg.sender ){
+		require ( _blacklist[ _address ] != _status , "ERR() redundant call");
+		_blacklist [ _address ]= _status ;
+	}
+
 	function set_min_stake_amount ( uint256 _amount ) public onlyowner_or_admin ( msg.sender ){
 		require ( _min_stake_amount != _amount  , "ERR() redundant call");
 		_min_stake_amount = _amount ;
@@ -47,6 +53,10 @@ contract Admin {
 	function set_token_registry ( string memory _symbol , address _address ) public onlyowner_or_admin ( msg.sender ){
 		require( _token_registry[_symbol ] != _address , "ERR() redundant call" );
 		 _token_registry[_symbol ] = _address ;
+	}
+	function set_feetaker ( address _address ) public onlyowner_or_admin ( msg.sender ){
+		require( _feetaker != _address , "ERR() redundant call" );
+		 _feetaker = _address ;
 	}
 	function set_feecollector ( address _address ) public onlyowner_or_admin ( msg.sender ){
 		require( _feecollector != _address , "ERR() redundant call" );
