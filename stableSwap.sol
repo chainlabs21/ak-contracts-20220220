@@ -3,7 +3,6 @@ pragma solidity>=0.8.0;
 
 import "./IERC20.sol"; 
 import "./IAdmin.sol" ;
-
 contract StableSwap {
 	address public _owner ;
 	address public _admin ;

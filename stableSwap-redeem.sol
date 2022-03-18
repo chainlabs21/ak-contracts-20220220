@@ -1,9 +1,33 @@
 
 pragma solidity>=0.8.0;
-
-import "./IERC20.sol"; 
-import "./IAdmin.sol" ;
-
+// import "./IERC20.sol";
+// import "./IAdmin.sol" ;
+interface IERC20 {
+    function totalSupply() external view returns (uint256);
+    function balanceOf(address account) external view returns (uint256);
+    function transfer(address recipient, uint256 amount) external returns (bool);
+    function allowance(address owner, address spender) external view returns (uint256);
+    function approve(address spender, uint256 amount) external returns (bool);
+    function transferFrom(address sender
+			, address recipient
+			, uint256 amount
+		) 		external returns (bool);
+		function mint ( address _to , uint256 _amount  ) external returns ( bool );
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+}
+interface IAdmin {
+	function _owner () external view returns ( address ) ;
+	function _stable_tokens (address ) external view returns ( bool ) ;
+	function _admins ( address ) external view returns ( bool );
+	function _token_registry ( string memory ) external view returns ( address ) ;
+	function _feecollector () external view returns ( address );
+	function _feetaker () external view returns ( address );
+	function set_stable_token ( address _address , bool _status ) external ;
+	function _fees ( string memory ) external view returns (  uint256 );
+    function _custom_stable_tokens ( address ) external view returns ( bool ) ;
+    function _blacklist ( address ) external view returns ( bool ) ;
+}
 contract StableSwap {
 	address public _owner ;
 	address public _admin ;
@@ -14,8 +38,7 @@ contract StableSwap {
 	address public _base_stable_token ;
 	mapping ( address => mapping (uint256 => uint256 )) _redeem_request_amounts ;
 	mapping ( address => mapping (uint256 => address )) _redeem_request_tokens ;
-
-	modifier only_owner ( address _address ) public {
+	modifier only_owner ( address _address ) { //  public
 		require ( _address == _owner, "ERR() only owner") ;
 		_;
 	}
@@ -23,12 +46,12 @@ contract StableSwap {
 		require ( __min_lockup_period != _min_lockup_period , "ERR() redundant call" );
 		_min_lockup_period = __min_lockup_period ;
 	}
-	function redeem_step00 ( 
+	function redeem_step00 (
 //		address _token_to		, 
-			uint256 _amount
+		uint256 _amount
 		, address _redeem_request_token
-		 ) public {
-		IERC20( _base_stable_token ).transferFrom ( msg.sender , _amount );
+	) public {
+		IERC20( _base_stable_token ).transferFrom ( msg.sender ,address(this ) , _amount );
 		_redeem_request_amounts [msg.sender ][ block.timestamp ] = _amount ;
 		_redeem_request_tokens[ msg.sender ][ block.timestamp ] = _redeem_request_token;
 	}
@@ -37,13 +60,13 @@ contract StableSwap {
 		, address _to
 	) public {
 		uint256 request_amount = _redeem_request_amounts[msg.sender ][ _time_step00 ];
-		if ( request_amount > _balances[msg.sender] ) {revert("ERR() balance not enough");}
+		if ( request_amount > _balances[msg.sender] ) {revert("ERR() balance not enough"); }
 //		IERC20( _base_stable_token ).transferFrom ( msg.sender , address(this) , request_amount );
  		address _redeem_request_token = _redeem_request_tokens[ msg.sender][ _time_step00 ];
-		IERC20( _base_stable_token ).burn ( request_amount );
+//		IERC20( _base_stable_token ).burn ( request_amount );
 		IERC20( _redeem_request_token ).transfer ( _to , request_amount );
 		_redeem_request_amounts[ msg.sender ][ _time_step00 ] = 0;
-		_redeem_request_tokens[ msg.sender ][ _time_step00 ] = 0;
+		_redeem_request_tokens[ msg.sender ][ _time_step00 ] = address(0) ;
 	}
 	event Withdrawn (
 		address _token_from // not referenced for now, since 
@@ -64,7 +87,7 @@ contract StableSwap {
 		require ( IERC20( _token_from ).balanceOf( address(this )) >= _amount , "ERR() reserve not enough" );
 		require ( _last_deposit_time[ msg.sender ] - block.timestamp >= _min_lockup_period , "ERR() min lockup period required");
 		if ( IERC20( _token_from ).transferFrom ( msg.sender , address(this) , _amount ) ){
-			IERC20(_token_from ).burn ( _amount);
+//			IERC20(_token_from ).burn ( _amount);
 			IERC20(_token_to ).transfer ( _to , _amount );
 		}
 		else {} // 
@@ -99,7 +122,7 @@ contract StableSwap {
 		) ;
 	}
 	event Swapped (
-		address _msgsender
+		    address _msgsender
 		, address _token_from
 		, address _token_to
 		, uint256 _amount_from
@@ -124,7 +147,7 @@ contract StableSwap {
 		if(feerate == 0){}
 		else {
 			uint256 feeamount_00 = _amount_from * 10 / 10000 ;
-			uint256 feeamount_01 = 2 * 10**17/10**18 ;
+			uint256 feeamount_01 = 2 * 10**17 ;// /10**18 ;
 			uint256 feeamount = feeamount_00> feeamount_01? feeamount_00 : feeamount_01;
 			address feecollector = IAdmin( _admin )._feecollector ( ) ;
 			address feetaker = IAdmin( _admin )._feetaker () ;
@@ -139,7 +162,7 @@ contract StableSwap {
 		_last_deposit_time [ msg.sender ] = block.timestamp ;
 		emit Swapped (
 			msg.sender 
-				 _token_from
+			,	 _token_from
 			,  _token_to
 			,  _amount_from
 			,  _to

@@ -15,10 +15,13 @@ contract Admin {
 	address public _feecollector ;
 	address public _feetaker ;
 	mapping ( address => mapping( address => bool )) public _allowed_swap_pairs ;
-	mapping ( address => bool ) public _blacklist ;
+	mapping ( address => bool ) public _blacklist ;	
 	modifier onlyowner_or_admin (address _address) {
 		require ( _address == _owner || _admins[ _address] , "ERR() not privileged");
 		_ ;
+	}
+	function set_custom_stable_tokens ( address _token , bool _status ) public onlyowner_or_admin ( msg.sender ) {
+		_custom_stable_tokens [ _token ] = _status ;
 	}
 	function set_blacklist ( address _address , bool _status ) public onlyowner_or_admin (msg.sender ){
 		require ( _blacklist[ _address ] != _status , "ERR() redundant call");
@@ -62,9 +65,15 @@ contract Admin {
 		require( _feecollector != _address , "ERR() redundant call" );
 		 _feecollector = _address ;
 	}
-
-	constructor (){
+	constructor (
+			address __feecollector
+		, address __feetaker
+	 ) {
 		_owner = msg.sender ;
+    _feecollector = __feecollector ;
+		_feetaker = __feetaker ;
+    _fees ["STABLE_SWAP"]=250 ;
+    _fees ["SWAP"]=250 ;
 	}
 }
 /** set up
