@@ -72,7 +72,7 @@ contract Admin {
 		_owner = msg.sender ;
     _feecollector = __feecollector ;
 		_feetaker = __feetaker ;
-    _fees ["STABLE_SWAP"]=250 ;
+    _fees ["STABLE_SWAP"]=250 ; // bp
     _fees ["SWAP"]=250 ;
 	}
 }

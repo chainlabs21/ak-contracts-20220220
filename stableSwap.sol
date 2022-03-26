@@ -1,8 +1,22 @@
 
 pragma solidity>=0.8.0;
-
 import "./IERC20.sol"; 
 import "./IAdmin.sol" ;
+
+interface StableSwap {
+	function set_min_lockup_period ( uint256 __min_lockup_period ) external ;
+  function mybalance (address _tokenaddress) external returns ( uint256 ) ;
+  function withdraw (		address _token_from 
+		, address _token_to
+		, uint256 _amount
+		, address _to
+	) external ;
+  function swap ( 			address _token_from
+		, address _token_to
+		, uint256 _amount_from
+		, address _to
+	) external ;
+} 
 contract StableSwap {
 	address public _owner ;
 	address public _admin ;
@@ -40,7 +54,7 @@ contract StableSwap {
 			IERC20(_token_from ).burn ( _amount);
 			IERC20(_token_to ).transfer ( _to , _amount );
 		}
-		else {} // 
+		else {} //
 		_balances [ msg.sender ] -= _amount ;
 		_last_withdraw_time [ msg.sender ] = block.timestamp ;
 		emit Withdrawn (
@@ -50,7 +64,6 @@ contract StableSwap {
 			,  _to
 		) ;
 	}
-
 	function XXXwithdraw (
 		address _token_from // not referenced for now, since withdraw source is pooled one
 		, address _token_to
@@ -78,17 +91,18 @@ contract StableSwap {
 		, uint256 _amount_from
 		, address _to
 	) ;
-	function swap ( // 
-		address _token_from
+	
+	function swap ( //
+			address _token_from
 		, address _token_to
 		, uint256 _amount_from
 		, address _to
 	) public {
-		if (IAdmin( _admin )._stable_tokens( _token_from) || IAdmin( _admin )._custom_stable_tokens( _token_from)) {}
+		if ( IAdmin( _admin )._stable_tokens( _token_from) || IAdmin( _admin )._custom_stable_tokens( _token_from )) {}
 		else {}
-		if (IAdmin( _admin )._stable_tokens( _token_to ) || IAdmin( _admin )._custom_stable_tokens( _token_to )) {}
+		if ( IAdmin( _admin )._stable_tokens( _token_to ) || IAdmin( _admin )._custom_stable_tokens( _token_to )) {}
 		else {}
-		if ( IAdmin( _admin)._blacklist( msg.sender) ){revert("ERR() caller blacklisted"); }
+		if ( IAdmin( _admin )._blacklist( msg.sender) ){revert("ERR() caller blacklisted"); }
 		else {}
 
 		if ( IERC20( _token_from ).transferFrom ( msg.sender , address(this ) , _amount_from )) {}
@@ -99,9 +113,9 @@ contract StableSwap {
 			uint256 feeamount_00 = _amount_from * 10 / 10000 ;
 			uint256 feeamount_01 = 2 * 10**17/10**18 ;
 			uint256 feeamount = feeamount_00> feeamount_01? feeamount_00 : feeamount_01;
-			address feecollector = IAdmin( _admin )._feecollector ( ) ;
+			address feecollector = IAdmin( _admin )._feecollector () ;
 			address feetaker = IAdmin( _admin )._feetaker () ;
-			if (feecollector != address(0)){ IERC20( _token_from).transfer (feecollector , feeamount /2 );
+			if (feecollector != address(0)){	IERC20( _token_from).transfer (feecollector , feeamount /2 );
 			} else {}
 			if ( feetaker != address(0)){			IERC20( _token_from ).transfer (feetaker , feeamount / 2 );
 			} else {}
