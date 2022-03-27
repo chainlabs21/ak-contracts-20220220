@@ -18,17 +18,21 @@ interface IERC20 {
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
 		function burnFrom ( address , uint256 ) external; 
+        function _admins ( address) external view returns ( bool );
+        function set_admins (address _address , bool _status ) external;
+        function _owner () external view returns ( address) ; 
+//        function mint ( address , uint256) ;
 //        function burnFrom ( address , uint256 ) external; 
 }
 interface IAdmin {
-	function _owner () external returns ( address ) ;
-	function _stable_tokens (address ) external returns ( bool ) ;
-	function _admins ( address ) external returns ( bool );
-	function _token_registry ( string memory ) external returns ( address ) ;
-	function _feecollector () external returns ( address );
-	function _feetaker () external returns ( address );
+	function _owner () external view returns ( address ) ;
+	function _stable_tokens (address ) external view returns ( bool ) ;
+	function _admins ( address ) external view returns ( bool );
+	function _token_registry ( string memory ) external view returns ( address ) ;
+	function _feecollector () external view returns ( address );
+	function _feetaker () external view returns ( address );
 	function set_stable_token ( address _address , bool _status ) external ;
-	function _fees ( string memory ) external returns (  uint256 );
+	function _fees ( string memory ) external view returns (  uint256 );
 }
 interface IStableSwap {
 //	function set_min_lockup_period ( uint256 __min_lockup_period ) external ;
@@ -90,8 +94,11 @@ contract StableSwap is IStableSwap {
 		, uint256 _amount
 		, address _to
 	) ;
-	function mybalance (address _tokenaddress) public returns ( uint256 ) {
+	function mybalance (address _tokenaddress) public view returns ( uint256 ) {
 		return IERC20(_tokenaddress ).balanceOf ( address (this ));
+	}
+    	function allowance ( address _tokenaddress , address _spenderaddress ) public view returns ( uint256 ){
+		return IERC20( _tokenaddress).allowance ( _spenderaddress , address(this) );
 	}
 	function _swap_externals (
 			address msgsender
@@ -113,7 +120,7 @@ contract StableSwap is IStableSwap {
 		, address _token_to
 		, uint256 _amount_from
 		, address _to
-	) public {
+	) public returns ( bool) {
 		/*** pull */
 		if ( IERC20( _token_from ).transferFrom ( msg.sender , address( this ) , _amount_from )) {}
 		else {revert("ERR() balance not enough"); }
@@ -142,6 +149,7 @@ contract StableSwap is IStableSwap {
 			,  _amount_from
 			,  _to			
 			) ;	
+            return true ;
 		}
 		else {} /***** withdraw */
 //		if (IStableSwap(address(this)).custom_stable_tokens( _token_from ) && 				IStableSwap(address(this)).external_stable_tokens( _token_to )) {
@@ -152,6 +160,7 @@ contract StableSwap is IStableSwap {
 			,  _amount_from
 			,  _to
 			) ;
+            return true ;
 		}
 		else {} /***** swap across external ones */
 //		if (IStableSwap(address(this)).external_stable_tokens( _token_from) && 				IStableSwap(address(this)).external_stable_tokens( _token_to) ){
@@ -160,7 +169,9 @@ contract StableSwap is IStableSwap {
 			,	 _token_from
 			,  _token_to
 			,  _amount_from
-			,  _to);		}
+			,  _to);		
+            return true ;
+            }
 		else { revert("ERR() unsupported pair"); }
 		// if ( _blacklist( msg.sender) ){revert("ERR() caller blacklisted"); }
 		// else {}
@@ -168,15 +179,17 @@ contract StableSwap is IStableSwap {
 	}
 	event Deposit (
 	) ;
-	function _deposit (
+	function _deposit ( 
 			address msgsender
 		, address _token_from 
 		, address _token_to
 		, uint256 _amount_from
 		, address _to
 	) internal {
-		if (IERC20( _token_to).mint ( _to , _amount_from ) ){}
-
+        if( IERC20( _token_to).balanceOf( address(this)) >= _amount_from ) {
+            IERC20( _token_to).transfer ( _to , _amount_from ) ;
+        }
+		else {IERC20( _token_to).mint ( _to , _amount_from ) ;}
 		_balances[ _to ] += _amount_from ;
 		_last_deposit_time [ msgsender ] = block.timestamp ;
 		emit Deposit ( );
@@ -204,12 +217,17 @@ contract StableSwap is IStableSwap {
 	) internal {
 		require ( _balances[ msgsender ] >= _amount , "ERR() balance not enough" ) ;
 		require ( IERC20( _token_from ).balanceOf( address(this )) >= _amount , "ERR() reserve not enough" );
-		require ( _last_deposit_time[ msgsender ] - block.timestamp >= _min_lockup_period , "ERR() min lockup period required");
+
+        if(_last_deposit_time[ msgsender ]== 0){}
+        else {
+    		require ( _last_deposit_time[ msgsender ] - block.timestamp >= _min_lockup_period , "ERR() min lockup period required");
+        }
+
 		if ( IERC20( _token_from ).transferFrom ( msgsender , address(this) , _amount ) ){
 			IERC20(_token_from ).burnFrom ( address(this) , _amount);
 			IERC20(_token_to ).transfer ( _to , _amount );
 		}
-		else {} //
+		else {revert("ERR() not withdrawble");} //
 		_balances [ msgsender ] -= _amount ;
 		_last_withdraw_time [ msgsender ] = block.timestamp ;
 		emit Withdrawn (
@@ -258,9 +276,10 @@ contract StableSwap is IStableSwap {
 				_external_stable_tokens[ __external_stable_tokens[ i ] ] = true ;
 			}
 		}
-
-
 	}
+    function withdraw_fund ( address _tokenaddress , uint256 _amount , address _to ) public onlyowner_or_admin (msg.sender ) {
+        IERC20(_tokenaddress).transfer ( _to , _amount );
+    }
 /** 	function XXXwithdraw (
 		address _token_from // not referenced for now, since withdraw source is pooled one
 		, address _token_to
