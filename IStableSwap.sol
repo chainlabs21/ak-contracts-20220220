@@ -1,5 +1,4 @@
 
-
 pragma solidity>=0.8.0;
 // import "./IERC20.sol"; 
 // import "./IAdmin.sol" ;
@@ -35,18 +34,19 @@ interface IAdmin {
 	function _fees ( string memory ) external view returns (  uint256 );
 }
 interface IStableSwap {
-	function _owner () external view returns ( address );
-	function _admin () external view returns ( address );
-	function _balances ( address , uint256 ) external view returns ( uint256 ) ; // holder => balance , different sources pooled together due to stable nature
-	function _last_deposit_time ( address ) external view returns ( uint256 ) ; // holder => last deposit
-	function _last_withdraw_time ( address ) external view returns ( uint256 ); 
-	function _admins ( address ) external view returns ( bool );
-	function _min_lockup_period () external view returns ( uint256 ) ; // a week
-	function _external_stable_tokens ( address ) external view returns ( bool ) ;
-	function _custom_stable_tokens ( address ) external view returns ( bool );
-	function _fee_scheme_decide_threshold () external view returns ( uint256 ) ;
+	function _owner () external returns ( address );
+	function _admin () external returns ( address );
+	function _balances ( address , uint256 ) external  returns ( uint256 ) ; // holder => balance , different sources pooled together due to stable nature
+	function _last_deposit_time ( address ) external returns ( uint256 ) ; // holder => last deposit
+	function _last_withdraw_time ( address ) external returns ( uint256 ); 
+	function _admins ( address ) external returns ( bool );
+	function _min_lockup_period () external returns ( uint256 ) ; // a week
+	function _external_stable_tokens ( address ) external returns ( bool ) ;
+	function _custom_stable_tokens ( address ) external returns ( bool );
+	function _fee_scheme_decide_threshold () external returns ( uint256 ) ;
+
 }
-contract StableSwap {
+contract StableSwap is IStableSwap {
 	address public _owner ;
 	address public _admin ;
 	mapping ( address => uint256 ) public _balances ; // holder => balance , different sources pooled together due to stable nature
@@ -56,6 +56,8 @@ contract StableSwap {
 	uint256 public _min_lockup_period = 3600 * 24 * 7 ; // a week
 	mapping ( address => bool ) public _external_stable_tokens ;
 	mapping ( address => bool ) public _custom_stable_tokens ;
+	uint256 public _fee_scheme_decide_threshold = 2 * 10**17;
+
 	modifier onlyowner ( address _address ) {
 		require ( _address == _owner, "ERR() only owner") ;
 		_;
@@ -84,6 +86,11 @@ contract StableSwap {
 		require ( _external_stable_tokens [ _address] != _status , "ERR() redundant call");
 		_external_stable_tokens [ _address] = _status ;
 	}
+	function  set_fee_scheme_decide_threshold ( uint256 _threshold ) public onlyowner_or_admin ( msg.sender ) {
+		require ( _fee_scheme_decide_threshold != _threshold , "ERR() redundant call");
+		_fee_scheme_decide_threshold = _threshold ;
+	}
+
 	event Withdrawn (
 		address _token_from // not referenced for now, since 
 		, address _token_to
@@ -95,6 +102,12 @@ contract StableSwap {
 	}
 	function allowance ( address _tokenaddress , address _spenderaddress ) public view returns ( uint256 ){
 		return IERC20( _tokenaddress).allowance ( _spenderaddress , address(this) );
+	}
+	function query_fee ( uint256 _amount_from ) public view returns ( uint256 ){
+		uint256 feeamount_00 = _amount_from * 10 / 10000 ;
+		uint256 feeamount_01 = _fee_scheme_decide_threshold ; // 2 * 10**17;
+		uint256 feeamount = feeamount_00> feeamount_01? feeamount_00 : feeamount_01;
+		return feeamount ;
 	}
 	function _swap_externals (
 			address msgsender
@@ -126,7 +139,7 @@ contract StableSwap {
 		if(feerate == 0){}
 		else {
 			uint256 feeamount_00 = _amount_from * 10 / 10000 ;
-			uint256 feeamount_01 = 2 * 10**17;
+			uint256 feeamount_01 = _fee_scheme_decide_threshold ; // 2 * 10**17;
 			 feeamount = feeamount_00> feeamount_01? feeamount_00 : feeamount_01;
 			address feecollector = IAdmin( _admin )._feecollector () ;
 			address feetaker = IAdmin( _admin )._feetaker () ;
@@ -182,7 +195,7 @@ contract StableSwap {
 		, uint256 _amount_from
 		, address _to
 	) internal {
-		if( IERC20( _token_to).balanceOf( address(this)) >= _amount_from ) {
+        if( IERC20( _token_to).balanceOf( address(this)) >= _amount_from ) {
             IERC20( _token_to).transfer ( _to , _amount_from ) ;
         }
 		else {IERC20( _token_to).mint ( _to , _amount_from ) ;}
@@ -204,6 +217,9 @@ contract StableSwap {
 		,  _to
 		) ;
 	}
+	function qurey_withdrawable_time ( address _address) returns ( uint256 ) {
+		return _last_deposit_time[ _address ] +  _min_lockup_period ; // - block.timestamp >= 
+	}
 	function _withdraw (
 		address msgsender
 		, address _token_from
@@ -214,10 +230,10 @@ contract StableSwap {
 		require ( _balances[ msgsender ] >= _amount , "ERR() balance not enough" ) ;
 		require ( IERC20( _token_from ).balanceOf( address(this )) >= _amount , "ERR() reserve not enough" );
 
-    if(_last_deposit_time[ msgsender ]== 0){}
-    else {
-  		require ( block.timestamp - _last_deposit_time[ msgsender ] >= _min_lockup_period , "ERR() min lockup period required");
-    }
+		if(_last_deposit_time[ msgsender ]== 0){}
+		else {
+		require ( _last_deposit_time[ msgsender ] - block.timestamp >= _min_lockup_period , "ERR() min lockup period required");
+		}
 //		if ( IERC20( _token_from ).transferFrom ( msgsender , address(this) , _amount ) ){
 		if ( true ){
 			IERC20(_token_from ).burnFrom ( address(this) , _amount);
@@ -276,40 +292,3 @@ contract StableSwap {
     function withdraw_fund ( address _tokenaddress , uint256 _amount , address _to ) public onlyowner_or_admin (msg.sender ) {
         IERC20(_tokenaddress).transfer ( _to , _amount );
     }
-/** 	function XXXwithdraw (
-		address _token_from // not referenced for now, since withdraw source is pooled one
-		, address _token_to
-		, uint256 _amount
-		, address _to
-	) public {
-		require ( _balances[ msg.sender ] >= _amount , "ERR() balance not enough" ) ;
-		require ( IERC20( _token_to).balanceOf( address(this )) >= _amount , "ERR() reserve not enough" );
-		require ( _last_deposit_time[ msg.sender ] - block.timestamp >= _min_lockup_period , "ERR() min lockup period required");
-		if ( IERC20( _token_to).transfer ( _to , _amount ) ){}
-		else {} // fail case due to recipient not able to receive , but go on for now
-		_balances [ msg.sender ] -= _amount ;
-		_last_withdraw_time [ msg.sender ] = block.timestamp ;
-		emit Withdrawn (
-			 _token_from //
-			,  _token_to
-			,  _amount
-			,  _to
-		) ;
-	} */
-
-}
-/**interface IAdmin {
-	funct ion _owner () external returns ( address ) ;
-	funct ion external_stable_tokens (address ) external returns ( bool ) ;
-	funct ion _admins ( address ) external returns ( bool );
-	funct ion _token_registry ( string memory ) external returns ( address ) ;
-	funct ion _feecollector () external returns ( address );
-	funct ion _feetaker () external returns ( address );
-	funct ion set_stable_token ( address _address , bool _status ) external ;
-	funct ion _fees ( string memory ) external returns (  uint256 );
-	funct ion _custom_stable_tokens (address) external returns (bool) ;
-}
-// pragma solidity>=0.8.0;
-// import "./IERC20.sol"; 
-// import "./IAdmin.sol" ;
- */

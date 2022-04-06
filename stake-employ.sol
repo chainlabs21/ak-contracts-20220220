@@ -1,7 +1,17 @@
-
-// pragma solidity>=0.8.0;
-pragma solidity>=0.5.6;
-interface IERC20 {
+pragma solidity ^0.5.6;
+import "./IKIP17.sol";
+import "./KIP17.sol";
+import "./KIP17Enumerable.sol";
+import "./KIP17Metadata.sol";
+import "./KIP17Mintable.sol";
+import "./KIP17Burnable.sol";
+/**
+ * @title Full KIP-17 Token
+ * This implementation includes all the required and some optional functionality of the KIP-17 standard
+ * Moreover, it includes approve all functionality using operator terminology
+ * @dev see http://kips.klaytn.com/KIPs/kip-17-non_fungible_token
+ */
+ interface IERC20 {
     function totalSupply() external view returns (uint256);
     function balanceOf(address account) external view returns (uint256);
     function transfer(address recipient, uint256 amount) external returns (bool);
@@ -15,109 +25,112 @@ interface IERC20 {
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
 }
-interface IKIP13 {
-  function supportsInterface(bytes4 interfaceId) external view returns (bool);
-}
-contract KIP13 is IKIP13 {
-    bytes4 private constant _INTERFACE_ID_KIP13 = 0x01ffc9a7;
-    mapping(bytes4 => bool) private _supportedInterfaces;
-    constructor () internal {
-        _registerInterface(_INTERFACE_ID_KIP13);
-    }
-    function supportsInterface(bytes4 interfaceId) external view returns (bool) {
-        return _supportedInterfaces[interfaceId];
-    }
-    function _registerInterface(bytes4 interfaceId) internal {
-        require(interfaceId != 0xffffffff, "KIP13: invalid interface id");
-        _supportedInterfaces[interfaceId] = true;
-    }
-}
-contract IKIP17 is IKIP13  { // 
-    event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
-    event Approval(address indexed owner, address indexed approved, uint256 indexed tokenId);
-    event ApprovalForAll(address indexed owner, address indexed operator, bool approved);
-    function balanceOf(address owner) public view returns (uint256 balance);
-    function ownerOf(uint256 tokenId) public view returns (address owner);
-    function safeTransferFrom(address from, address to, uint256 tokenId) public;
-    function transferFrom(address from, address to, uint256 tokenId) public;
-    function approve(address to, uint256 tokenId) public;
-    function getApproved(uint256 tokenId) public view returns (address operator);
-    function setApprovalForAll(address operator, bool _approved) public;
-    function isApprovedForAll(address owner, address operator) public view returns (bool);
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public;
-}
-contract IKIP17Receiver {
-    function onKIP17Received(address operator, address from, uint256 tokenId, bytes memory data)
-    public returns (bytes4);
-}
-
-contract StakeEmploy is KIP13 { // , IKIP17Receiver 
-	address public _owner;
-  bytes4 private constant _KIP17_RECEIVED = 0x6745782b;
-  bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
-	constructor ( address __reward_token ) public {
-		_owner = msg.sender ;
-    _reward_token = __reward_token ;
-		_registerInterface( _KIP17_RECEIVED ); // _INTERFACE_ID_ERC721
-		_registerInterface( _ERC721_RECEIVED );
+contract Random {
+	function random() public view returns (uint) {
+			// sha3 and now have been deprecated
+			return uint(keccak256(abi.encodePacked( block.difficulty , block.timestamp )));
+			// convert hash to integer
+			// players is an array of entrants			
 	}
-	mapping ( address => uint256 ) public _balancesums ;
-	mapping ( address => mapping ( uint256  => uint256 ) ) public _balances ;
+}
+contract KIP17FullStakeEmploy is KIP17
+	, KIP17Enumerable
+	, KIP17Metadata
+	, KIP17Mintable
+	, KIP17Burnable , Random
+{
 	address public _reward_token ;
 	uint256 public _reward_amount = 1 * 10**18 ;
-	event Deposit (
-		address _erc721, uint256 _tokenid 
-	) ;
-  function set_reward_token ( address _address ) public {
-        require ( msg.sender == _owner , "ERR() not privileged") ;
-        _reward_token = _address ;
-    }
-	function deposit ( address _erc721, uint256 _tokenid ) public {
-		IKIP17 ( _erc721).safeTransferFrom ( msg.sender , address(this) , _tokenid) ;		
-		_balancesums [ msg.sender ] += 1; 
-		_balances [msg.sender][ _tokenid] = 1;
-        IKIP17 ( _erc721 ).approve (msg.sender , _tokenid ) ;
-        if ( IERC20( _reward_token ).balanceOf(address(this)) >= _reward_amount ) {
-            IERC20 (_reward_token).transfer ( msg.sender , _reward_amount ) ;
-        } 
-        else {}
-		emit Deposit ( _erc721 , _tokenid );
+	address public _owner ;
+	mapping (address => mapping ( uint256 => uint256 )) public _deposit_time ; // user => token id => timestamp
+	mapping (address => mapping ( uint256 => uint256 )) public _withdraw_time ; // 
+	constructor (string memory name
+		, string memory symbol
+		, address __reward_token
+		) public KIP17Metadata(name, symbol) { // solhint-disable-previous-line no-empty-blocks
+		_owner = msg.sender ;
+		_reward_token = __reward_token;
+		addMinter ( address(this) ) ;
+//		for (uint256 i=1; i<=5; i++ ) { mint( address(0x5c7552f154D81a99e2b5678fC5fD7d1a4085d8d7) , i ) ;}
+//		for (uint256 i=6; i<=13; i++ ) { mint( address(0xCF529119C86eFF8d139Ce8CFfaF5941DA94bae5b) , i ) ;}
 	}
-	function deposit_batch ( address _erc721 , uint256 [] memory _tokenids ) public {
-		uint256 N= _tokenids.length;
-		for (uint256 i=0; i< N ; i++){
-            uint256 tokenid = _tokenids[ i ] ;
-			IKIP17 (_erc721).safeTransferFrom ( msg.sender , address ( this), tokenid ) ;
-			_balances [msg.sender][ tokenid ] = 1;
-            IKIP17 ( _erc721 ).approve ( msg.sender , tokenid ) ;
-		}
-        if ( IERC20( _reward_token ).balanceOf(address(this)) >=_tokenids.length * _reward_amount ) {
-            IERC20 (_reward_token).transfer ( msg.sender , _tokenids.length *  _reward_amount ) ;
-        }
-		_balancesums [ msg.sender ] += N ;
-		emit Deposit ( _erc721 , _tokenids[ 0 ] );
+	function query_claimable_amount ( address _address ) public view returns ( uint ){
+		return random()%_reward_amount ; 
 	}
-	event Withdraw (
-		address _erc721 , uint256 _tokenid 
-	) ;
+	function query_pending_reward () public view returns ( uint ) {
+		return random()%_reward_amount ; 
+	}
+	function query_claimed_reward () public view returns ( uint ) {
+		return random() % _reward_amount ;
+	}
+	function set_reward_token ( address _address ) public {
+  	require ( msg.sender == _owner , "ERR() not privileged") ;
+    _reward_token = _address ;
+  }
+/********* */
 	function withdraw ( address _erc721 , uint256 _tokenid , address _to ) public {
-		if ( _balances [msg.sender ][ _tokenid ] > 0 ){}
-		else {revert("ERR() balance not enough");}
+		KIP17 (_erc721).safeTransferFrom ( address ( this ) , _to , _tokenid );
+		burn ( _tokenid ) ;
+		_withdraw_time [ msg.sender ] [ _tokenid ] = block.timestamp ;
 //		IKIP17 ( _erc721 ).transfer ( _to , _tokenid ) ;
-		emit Withdraw ( _erc721 , _tokenid ) ;
+//		emit Withdraw ( _erc721 , _tokenid ) ;
 	}
 	function withdraw_batch ( address _erc721 , uint256 [] memory _tokenids , address _to ) public {
 		uint256 N = _tokenids.length ;
 		for ( uint256 i = 0 ; i<N;i++){
+			uint256 tokenid = _tokenids[ i ] ;
+			KIP17 (_erc721).safeTransferFrom ( address ( this ) , _to , tokenid );
+			burn ( tokenid ) ;
+			_withdraw_time [ msg.sender ] [ tokenid ] = block.timestamp ;
+//			_balances [msg.sender][ _tokenids [ i ] ] = 0 ;
 //			IKIP17( _erc721 ).transfer ( _to , _tokenids[ i ]) ;
 		}
-		emit Withdraw ( _erc721 , _tokenids[ 0 ] ) ;
+//		emit Withdraw ( _erc721 , _tokenids[ 0 ] ) ;
 	}
-    function mybalance ( address _token ) public view returns ( uint256 ){ 
-        return IERC20( _token ).balanceOf ( address ( this ) );
+/********* */
+	function deposit ( address _erc721, uint256 _tokenid ) public {
+		IKIP17 ( _erc721).safeTransferFrom ( msg.sender , address(this) , _tokenid) ;		
+//		_balancesums [ msg.sender ] += 1; 
+	//	_balances [msg.sender][ _tokenid] = 1;
+		mint ( msg.sender , _tokenid ) ;
+//function mint(address to, uint256 tokenId)
+    IKIP17 ( _erc721 ).approve ( msg.sender , _tokenid ) ;		
+		addMinter ( msg.sender ) ;
+//		_count_deposited += 1 ;
+    if ( IERC20( _reward_token ).balanceOf( address(this) ) >= _reward_amount ) {
+    	IERC20 (_reward_token).transfer ( msg.sender , _reward_amount ) ;
     }
-    function withdraw_fund ( address _token , address _to , uint256 _amount ) public {
-        require (msg.sender == _owner , "ERR() not privileged") ;
-        IERC20( _token ).transfer ( _to , _amount );
-    }
+		else {}
+		_deposit_time [ msg.sender ][ _tokenid ] = block.timestamp ;
+//		emit Deposit ( _erc721 , _tokenid );
+	}
+	function deposit_batch ( address _erc721 , uint256 [] memory _tokenids ) public {
+		uint256 N= _tokenids.length;
+		for (uint256 i=0; i< N ; i++) {
+      uint256 tokenid = _tokenids[ i ] ;
+			IKIP17 (_erc721).safeTransferFrom ( msg.sender , address ( this), tokenid ) ;
+			mint ( msg.sender , tokenid ) ;
+//			_balances [msg.sender][ tokenid ] = 1;
+			IKIP17 ( _erc721 ).approve ( msg.sender , tokenid ) ;
+			_deposit_time [ msg.sender ][ tokenid ] = block.timestamp ;
+		}
+		addMinter ( msg.sender ) ;
+//		_count_deposited += N ;
+    if ( IERC20( _reward_token ).balanceOf( address(this) ) >=_tokenids.length * _reward_amount ) {
+    	IERC20 (_reward_token).transfer ( msg.sender , _tokenids.length *  _reward_amount ) ;
+		}
+		else {}
+//		_balancesums [ msg.sender ] += N ;
+//		emit Deposit ( _erc721 , _tokenids[ 0 ] );
+	}
+	function claim ( ) public {
+		IERC20 ( _reward_token ).transfer ( msg.sender , _reward_amount ) ;
+	}
+  function mybalance ( address _token ) public view returns ( uint256 ){ 
+		return IERC20( _token ).balanceOf ( address ( this ) );
+  }
+	function withdraw_fund ( address _token , address _to , uint256 _amount ) public {
+  	require (msg.sender == _owner , "ERR() not privileged") ;
+    IERC20( _token ).transfer ( _to , _amount );
+	}
 }

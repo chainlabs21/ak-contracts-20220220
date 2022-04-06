@@ -1,19 +1,20 @@
 
 
-[]721/17
-
-0xf3db9d347ae0c54970e05bf09a81028aa1b439e5
+[]721/17 0xf3db9d347ae0c54970e05bf09a81028aa1b439e5
 // XXX 0x52D5D8e99ab30Dc45856AA66443c921B88db6A99
 
 []stake/employ
-0x57daf27513b604e05adfb83cdb32a7a23e2b7c8b	@ropsten , owner :
+0x9e6b48e96840dd0204dba257d639e91dba0d304b @ropsten , 
+// 0x0bf3ef6846cc339c90fbc33013484409d724e81a @ropsten, KIP17-based , owner :
+// 0xcbd8356e18c74c7af09fd062cb10e9e8fa54072b @ropsten, buggy KIP17-based , owner : 
+// 0x35e6ad7ddf9fbdcf338219b29d5d141470e6deec @ropsten , KIP17-based , owner : 
+// 0x57daf27513b604e05adfb83cdb32a7a23e2b7c8b	@ropsten , owner :
 // 0x0cff79fbfbf8f1b76d6d0d8c9c556461d95ad53c @ropsten , owner : 
 // XXX 0xf81f2cae79cc1e55855d9804a7890f1e2f9e7f4f @ropsten owner : 
 
 [] AKG: "0xff817302e7b6d116cdff1a730508551ee1557875",
 
-[]
-		 ADMIN  : '0x0A400968AB933C13fE668Ab8AAD34181E197c74b' 
+[]		 ADMIN  : '0x0A400968AB933C13fE668Ab8AAD34181E197c74b' 
 
 __CUSTOM_STABLE_TOKENS
 ["0x144449346f10A8E5305189e3669506e4EEB7D8a4"]
@@ -24,3 +25,6 @@ __EXTERNAL_STABLE_TOKENS
 
 __SWAP : '0x1a82343507838a40a955927da716702199e6eb9a'
 
+
+dev/tester 0xCF529119C86eFF8d139Ce8CFfaF5941DA94bae5b
+owner : 0x5c7552f154D81a99e2b5678fC5fD7d1a4085d8d7
