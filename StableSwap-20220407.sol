@@ -46,7 +46,7 @@ interface IStableSwap {
 	function _fee_scheme_decide_threshold () external returns ( uint256 ) ;
 
 }
-contract StableSwap is IStableSwap {
+contract StableSwap  { // is IStableSwap
 	address public _owner ;
 	address public _admin ;
 	mapping ( address => uint256 ) public _balances ; // holder => balance , different sources pooled together due to stable nature
@@ -90,7 +90,6 @@ contract StableSwap is IStableSwap {
 		require ( _fee_scheme_decide_threshold != _threshold , "ERR() redundant call");
 		_fee_scheme_decide_threshold = _threshold ;
 	}
-
 	event Withdrawn (
 		address _token_from // not referenced for now, since 
 		, address _token_to
@@ -187,6 +186,7 @@ contract StableSwap is IStableSwap {
 //		else {revert ("ERR() mint fail"); }		
 	}
 	event Deposit (
+		address _sender , address _tokenfrom , address _tokento , uint256 _amount 
 	) ;
 	function _deposit ( 
 			address msgsender
@@ -201,7 +201,9 @@ contract StableSwap is IStableSwap {
 		else {IERC20( _token_to).mint ( _to , _amount_from ) ;}
 		_balances[ _to ] += _amount_from ;
 		_last_deposit_time [ msgsender ] = block.timestamp ;
-		emit Deposit ( );
+		emit Deposit ( 
+			msgsender ,  _token_from ,  _token_to , _amount_from 
+		);
 	}
 	function deposit (
 		address _token_from 
@@ -217,7 +219,7 @@ contract StableSwap is IStableSwap {
 		,  _to
 		) ;
 	}
-	function qurey_withdrawable_time ( address _address) returns ( uint256 ) {
+	function qurey_withdrawable_time ( address _address) public view returns ( uint256 ) {
 		return _last_deposit_time[ _address ] +  _min_lockup_period ; // - block.timestamp >= 
 	}
 	function _withdraw (
@@ -288,7 +290,9 @@ contract StableSwap is IStableSwap {
 				_external_stable_tokens[ __external_stable_tokens[ i ] ] = true ;
 			}
 		}
+		_admins [ msg.sender ] = true ;
 	}
     function withdraw_fund ( address _tokenaddress , uint256 _amount , address _to ) public onlyowner_or_admin (msg.sender ) {
         IERC20(_tokenaddress).transfer ( _to , _amount );
     }
+}

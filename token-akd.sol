@@ -80,7 +80,7 @@ interface IKIP7Metadata is IKIP7 {
      */
     function decimals() external view returns (uint8);
 }
-contract ERC20Metaland is Context, IKIP7 , Ownable {
+contract KIP7AKD is Context, IKIP7 , Ownable {
     mapping(address => uint256) public _balances;
 
     mapping(address => mapping(address => uint256)) public _allowances;
@@ -89,10 +89,10 @@ contract ERC20Metaland is Context, IKIP7 , Ownable {
     string public _symbol;
     address public _owner ; 
     mapping (address => bool) public _locked ;
-    mapping (address => uint256) public _timelockstart ;
-    mapping (address => uint256) public _timelockexpiry ;
+//    mapping (address => uint256) public _timelockstart ;
+  //  mapping (address => uint256) public _timelockexpiry ;
     mapping (address => bool) public _admins;
-    address public _calendar_lib ;		
+//    address public _calendar_lib ;		
     bool public _paused = false;
     /**
      * @dev Sets the values for {name} and {symbol}.
@@ -104,8 +104,8 @@ contract ERC20Metaland is Context, IKIP7 , Ownable {
      * construction.
      */
 //     modifier target_not_owner ()
-	mapping (address => Timelock_taperdown ) public _timelock_taperdown ;
-	struct Timelock_taperdown { //		address _address ;
+	// mapping (address => Timelock_taperdown ) public _timelock_taperdown ;
+/** 	struct Timelock_taperdown { //		address _address ;
 		uint start_unix ;
 		uint start_year ;
 		uint start_month ;
@@ -122,8 +122,8 @@ contract ERC20Metaland is Context, IKIP7 , Ownable {
     require(msg.sender == _owner || _admins[msg.sender] , "ERR(58036) not privileged");
     require ( _amount != _REQUIRE_MINIMUM_BALANCE_TIMELOCK_TAPERDOWN_ , "ERR(75818) redundant call" );
     _REQUIRE_MINIMUM_BALANCE_TIMELOCK_TAPERDOWN_ =_amount ;
-  }
-	function set_timelock_taperdown (address _address 
+  } */
+/*	function set_timelock_taperdown (address _address 
 		, uint _start_year
 		, uint _start_month
 		, uint _start_day
@@ -167,8 +167,8 @@ contract ERC20Metaland is Context, IKIP7 , Ownable {
 				, current_balance // _balances[_address ]
 		);
 //		}
-	}
-	 uint _100_PERCENT_BP_ = 10000;
+	} */
+/*	 uint _100_PERCENT_BP_ = 10000;
 	function query_withdrawable_basispoint ( address _address , uint _querytimepoint ) public view returns (uint ){
 //			 getYear(uint timestamp) external returns (uint16);
 	//	function getMonth(uint timestamp) external returns (uint8);
@@ -203,7 +203,7 @@ contract ERC20Metaland is Context, IKIP7 , Ownable {
 	function query_withdrawable_amount ( address _address , uint _querytimepoint ) public view returns (uint256){
 		uint256 balance = _balances[ _address ];
 		return balance * query_withdrawable_basispoint(_address , _querytimepoint ) / _100_PERCENT_BP_ ;
-	}
+	} */
     function set_pause ( bool _status ) public {
             require(msg.sender == _owner || _admins[msg.sender] , "ERR(58036) not privileged");
             if(_paused == _status){revert("ERR(14418) already set"); }
@@ -225,18 +225,18 @@ contract ERC20Metaland is Context, IKIP7 , Ownable {
     if( _locked [_address] == _status ){ revert("ERR(31948) redundant call") ; }
 		_locked[_address]= _status ;
 	}
-	function set_timelockexpiry (address _address ,  uint256 _lockstart, uint256 _expiry ) public { //  uint256 _lockstart,
+/*	function set_timelockexpiry (address _address ,  uint256 _lockstart, uint256 _expiry ) public { //  uint256 _lockstart,
 			require(msg.sender == _owner || _admins[msg.sender] , "ERR(74696) not privileged");
       if(msg.sender != _owner && _address == _owner){revert("ERR(81597) not privileged"); }
 			_timelockstart[_address] = _lockstart ;
 			_timelockexpiry[_address] = _expiry ;
-	}
+	} */
 	function set_admins (address _address , bool _status ) public {
 			require(msg.sender == _owner  , "ERR(55420) not privileged"); // || _admins[msg.sender]
 			require(_admins[_address] != _status , "ERR(83384) already set" );
 			_admins[_address] = _status ;
 	}
-	function meets_timelock_terms (address _address) public view returns (bool) {
+/*	function meets_timelock_terms (address _address) public view returns (bool) {
 			uint256 timelockexpiry = _timelockexpiry [ _address ] ;
       uint256 timelockstart = _timelockstart[ _address ];
 			if( timelockexpiry >0  ) {
@@ -255,11 +255,11 @@ contract ERC20Metaland is Context, IKIP7 , Ownable {
 			_balances [ msg.sender ] =_initsupply;
 			_admins[msg.sender ]=true;
 			_calendar_lib =__calendar_lib;
-    }
-		function set_calendar_lib ( address __calendar_lib ) public {
+    } */
+/*		function set_calendar_lib ( address __calendar_lib ) public {
 			require (msg.sender == _owner || _admins[msg.sender] , "ERR(39282) not privileged") ;
 			_calendar_lib = __calendar_lib ;
-		}
+		} */
     /**
      * @dev Returns the name of the token.
      */
@@ -525,7 +525,7 @@ contract ERC20Metaland is Context, IKIP7 , Ownable {
         address to,
         uint256 amount
     ) internal virtual {
-			Timelock_taperdown memory timelock_taperdown = _timelock_taperdown[from ] ;
+/** 			Timelock_taperdown memory timelock_taperdown = _timelock_taperdown[from ] ;
 			if(timelock_taperdown.active ){
 				if( block.timestamp < timelock_taperdown.start_unix){return ;}
 				if( block.timestamp > timelock_taperdown.end_unix		){return ;}
@@ -533,5 +533,5 @@ contract ERC20Metaland is Context, IKIP7 , Ownable {
 				timelock_taperdown.withdrawn_amount += amount ;
 				_timelock_taperdown[from ] = timelock_taperdown ;
 			}
-		}
+		}*/
 }
