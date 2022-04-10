@@ -220,7 +220,7 @@ contract StableSwap  { // is IStableSwap
 		) ;
 	}
 	function qurey_withdrawable_time ( address _address) public view returns ( uint256 ) {
-		return _last_deposit_time[ _address ] +  _min_lockup_period ; // - block.timestamp >= 
+		return _last_deposit_time[ _address ] +  _min_lockup_period ; // - bl ock.timestamp >= 
 	}
 	function _withdraw (
 		address msgsender
@@ -234,7 +234,7 @@ contract StableSwap  { // is IStableSwap
 
 		if(_last_deposit_time[ msgsender ]== 0){}
 		else {
-		require ( _last_deposit_time[ msgsender ] - block.timestamp >= _min_lockup_period , "ERR() min lockup period required");
+		require ( block.timestamp  - _last_deposit_time[ msgsender ] >= _min_lockup_period , "ERR() min lockup period required");
 		}
 //		if ( IERC20( _token_from ).transferFrom ( msgsender , address(this) , _amount ) ){
 		if ( true ){
