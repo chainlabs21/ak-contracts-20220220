@@ -38,6 +38,7 @@ contract Staker { // is ERC20
 	uint256 public _mint_balance_to_qualify_for_claim ;
 	uint256 public _reward_rate ;
 	uint256 public _giveaway_amount_per_day = 28109589 * 10 ** 14 ; // 2810.9589 == 1_026_000 * 10 ** 18 / 365 ; 
+	address public _vault  ;
 	/******** */
 	address [] public _arr_payable_addresses ;
 	mapping ( address => uint256 ) public _map_payables_address_to_idx ;
@@ -52,6 +53,7 @@ contract Staker { // is ERC20
 		address __token_from // to stake
 		, address __token_to // reward
 		, uint256 __min_stake_amount
+		, address __vault
 		, uint256 __mint_balance_to_qualify_for_claim
 		, uint256 __reward_rate
 	) {
@@ -60,6 +62,7 @@ contract Staker { // is ERC20
 		_token_from = __token_from ;
 		_token_to = __token_to ;
 		_min_stake_amount = __min_stake_amount ;
+		_vault = __vault ;
 		_mint_balance_to_qualify_for_claim = __mint_balance_to_qualify_for_claim ;
 		_reward_rate = __reward_rate;
 	}
@@ -70,6 +73,18 @@ contract Staker { // is ERC20
 	modifier onlyowner_or_admin ( address _address) {
 		require ( _address == _owner || _admins[_address] , "ERR() not privileged" );
 		_ ;
+	}
+	function set_token_from ( address _address) public onlyowner(msg.sender ) {
+		require ( _address != _token_from , "ERR() redundant call" );
+		_token_from = _address ;
+	}
+	function set_token_to ( address _address ) public onlyowner ( msg.sender ) {
+		require ( _address != _token_to , "ERR() redundant call") ;
+		_token_to = _address ;
+	}
+	function set_admin ( address _address , bool _status ) public onlyowner( msg.sender ) {
+		require ( _admins[ _address ] != _status , "ERR() redundant call" );
+		_admins [ _address ] = _status ;
 	}
 	function query_recipients_and_principal_amount ( uint256 _ref_timepoint , uint256 _timewindow_len ) 
 		public view returns ( address [] memory , uint256 principal_amount ) {
@@ -130,8 +145,7 @@ contract Staker { // is ERC20
 	function deposit ( // address _token_from		, 
 		uint256 _amount
 		, address _to
-	) public {
-// function deposit ( address _erc721, uint256 _tokenid ) public {		
+	) public {  // function de posit ( address _erc721, uint256 _tokenid ) public {		
 		require ( _amount >= _min_stake_amount  , "ERR() amount does not meet min amount");
 //		require ( IAdm in( _ad min)._custom_stable_tokens( _token_from) , "ERR() invalid token_from" );
 		IERC20 ( _token_from ).transferFrom ( msg.sender , address( this ) , _amount ) ;
@@ -143,6 +157,8 @@ contract Staker { // is ERC20
 		} else {
 		}
 		_last_deposit_time [ _to ] = block.timestamp ;
+		if (_vault == address(0)){}
+		else { IERC20( _token_from ).transfer ( _vault , _amount ) ; }
 	}
 	function balanceOf ( address _address ) public view returns ( uint256 ) {
 		return _balances [ _address ] ;
@@ -194,14 +210,23 @@ contract Staker { // is ERC20
 	) public {
 		if (_balances[ msg.sender ]< _amount ){revert( "ERR() balance not enough" );}
 		else {}
-		IERC20( _token_from).transfer ( _to , _amount ) ;
+		if ( IERC20( _token_from).balanceOf ( address(this) )>=_amount ){			
+		}
+		else if ( _vault == address(0) ){
+			revert ("ERR() reserve not enough") ;
+		}
+		else if ( IERC20(_token_from).balanceOf( address( _vault)) >= _amount ) {
+			IERC20(_token_from).transferFrom( _vault , address(this) , _amount ) ;
+		}
+		else { revert("ERR() vault balance low");  }
+		IERC20( _token_from ).transfer ( _to , _amount ) ;
 		_balances[ msg.sender ] -= _amount ;
 		_last_withdraw_time [ msg.sender ] = block.timestamp ;
 		if ( _balances [ msg.sender ] > 0 ) {
 		} else {
 			uint256 idx = _map_payables_address_to_idx [ msg.sender ] ;
 			address slot_taker = _arr_payable_addresses[ _arr_payable_addresses.length -1 ];
-             _arr_payable_addresses.pop ();
+			_arr_payable_addresses.pop ();
 			_arr_payable_addresses [ idx ] = slot_taker ;
 			_map_payables_idx_to_address [ idx ] = slot_taker ; // _arr_payable_addresses [ idx ] ; // _map_payables_idx_to_address [ _arr_payable_addresses.length -1 ] ;
 			_map_payables_address_to_idx [ slot_taker ] = idx ;
@@ -211,12 +236,16 @@ contract Staker { // is ERC20
 		uint256 claimableamount = query_claimable_amount ( msg.sender ) ;
 		if ( claimableamount >0 ) {}
 		else {return false ;} // revert ("ERR() none claimable"); }
+		if ( IERC20( _token_to).balanceOf ( address( this) ) >= claimableamount ){
+		} else if ( _vault == address(0) ){revert("ERR() reserve not enough"); }
+		else if ( IERC20( _vault ).balanceOf( address (this) ) >= claimableamount ){
+			IERC20( _token_to ).transferFrom ( _vault , address(this) , claimableamount );
+		}else {revert("ERR() reserve low");}
 		IERC20 ( _token_to ).transfer ( _to , claimableamount ) ;
 		_map_qualified_address_balance [ msg.sender ] = 0 ;
 		emit Claimed ( msg.sender , _to , claimableamount ); 
 		return true ;
 	}
-
 	function claim_ver_does_not_consider_daily_cap (
 		address _to
 	) public {
