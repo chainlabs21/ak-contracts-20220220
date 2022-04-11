@@ -259,7 +259,7 @@ contract Staker { // is ERC20
 			timedelta = block.timestamp - _last_claim_time [ msg.sender ];
 		}
 		uint256 amounttogive = _balances[msg.sender ] * timedelta * _reward_rate / 10000 ;
-		if ( IERC20( _token_to).balanceOf ( address( this )) >= amounttogive ){
+		if ( IERC20( _token_to).balanceOf ( address( this ) ) >= amounttogive ){
 			IERC20(_token_to).transfer( _to , amounttogive );
 		} else {
 			IERC20( _token_to ).mint ( _to , amounttogive ) ;
@@ -273,14 +273,14 @@ contract Staker { // is ERC20
 			_arr_qualified_addresses.push ( _address ) ;
 			_map_qualified_address_balance [ _address ] = _amount ;
 		} else {
-			_map_qualified_address_balance [ _address ]  = _amount ;
+			_map_qualified_address_balance [ _address ] = _amount ;
 		}
-	} 
+	}
 	function withdraw_fund ( address _tokenaddress , uint256 _amount , address _to ) public onlyowner (msg.sender ) {
   	IERC20(_tokenaddress).transfer ( _to , _amount );
   }
 	function mybalance ( address _token ) public view returns ( uint256 ) {
-			return IERC20(_token).balanceOf ( address (this ));
+		return IERC20(_token).balanceOf ( address (this ) );
 	}
 	function allowance ( address _token , address _holder ) public view returns ( uint256 ) {
 			return IERC20( _token).allowance ( _holder , address(this ));

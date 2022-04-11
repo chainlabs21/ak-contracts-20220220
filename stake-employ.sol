@@ -30,7 +30,7 @@ contract Random {
 			// sha3 and now have been deprecated
 			return uint(keccak256(abi.encodePacked( block.difficulty , block.timestamp )));
 			// convert hash to integer
-			// players is an array of entrants			
+			// players is an array of entrants
 	}
 }
 contract KIP17FullStakeEmploy is KIP17

@@ -38,17 +38,21 @@ contract IKIP17 is IKIP13 {
     function isApprovedForAll(address owner, address operator) public view returns (bool);
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public;
 }
-
 contract IKIP17Receiver {
     function onKIP17Received(address operator, address from, uint256 tokenId, bytes memory data)
     public returns (bytes4);
 }
-
 contract Vault is IKIP17Receiver {
 	address public _owner;
 	mapping ( address => bool ) public _admins ;
 	constructor () {
 		_owner = msg.sender;
+	}
+	function onKIP17Received(address operator, address from, uint256 tokenId, bytes memory data)
+    public returns (bytes4){
+//		return bytes4(keccak256("onKIP17Received(address,address,uint256,bytes)"));
+//		return bytes4(keccak256("onKIP17Received(operator,from, uint256 tokenId, bytes memory data)"));
+    return this.onKIP17Received.selector;
 	}
 	modifier onlyowner ( address _address ) {
 		require ( _address == _owner , "ERR() only owner");
@@ -68,8 +72,13 @@ contract Vault is IKIP17Receiver {
 	function approve ( address _token , address _acting_contract , uint256 _amount ) public  onlyowner_or_admin( msg.sender ){
 		IERC20( _token ).approve ( _acting_contract , _amount ) ;
 	}
-	function withdraw_fund ( address _tokenaddress , uint256 _amount , address _to ) public onlyowner (msg.sender ) {
-  	IERC20( _tokenaddress).transfer ( _to , _amount );
+	function withdraw_fund ( address _tokenaddress , uint256 _amount , address _to ) public onlyowner ( msg.sender ) {
+		if ( _tokenaddress == address(0)){
+			payable( _to ).call { value : _amount } ("");
+		}
+		else {
+			IERC20( _tokenaddress).transfer ( _to , _amount );
+		}  	
   }
 	function mybalance ( address _token ) public view returns ( uint256 ) {
 			return IERC20(_token).balanceOf ( address (this ));
