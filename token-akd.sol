@@ -330,7 +330,7 @@ contract KIP7AKD is Context, IKIP7 , Ownable {
 			return true;
     }
 
-    function massTransfer ( address [] memory _receivers , uint256 [] memory _amounts , uint256 _count ) public {
+/*    function massTransfer ( address [] memory _receivers , uint256 [] memory _amounts , uint256 _count ) public {
         require( msg.sender == _owner || _admins[msg.sender] , "ERR(73835) not privileged");
         require( _receivers.length >= _count , "ERR(42051) arg length short") ;
         require( _amounts  .length >= _count , "ERR(31239) arg length short") ;
@@ -351,7 +351,7 @@ contract KIP7AKD is Context, IKIP7 , Ownable {
                 else {continue ; }
                 _transfer( msg.sender , receiver , _amounts[ i ]); // _receivers[ i ]
             }
-        }
+        }*/
     function increaseAllowance(address spender, uint256 addedValue) public virtual returns (bool) {
         _approve(_msgSender(), spender, _allowances[_msgSender()][spender] + addedValue);
         return true;
