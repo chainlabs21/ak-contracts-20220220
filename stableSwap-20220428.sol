@@ -578,8 +578,7 @@ contract StableSwap is KIP7AKD { // is IStableSwap
 			uint256 amountto = _amount_from * 10**decimals_to / 10**18 ;
 			IERC20(_token_to ).transfer ( _to , amountto );
 		}
-		else {revert("ERR() not withdrawble");} //
-		
+		else {revert("ERR() not withdrawble");} //		
 		_balances_book [ msgsender ] -= _amount_from ;
 		_last_withdraw_time [ msgsender ] = block.timestamp ;
 		emit Withdrawn (
