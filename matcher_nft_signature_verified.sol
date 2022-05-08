@@ -185,6 +185,8 @@ contract Matcher_single_simple is // Ownable , Utils  ,//	Interface_to_vault	, /
 		require( _seller != address(0) , "ERR() invalid seller" );
 		//***** recovering the seller's address
 		require(recoverSigner(_message, _sell_signature) == _seller, "Sender is not the owner!");
+		//***** comparing two message hashes
+		require(msgHash(tokenid, _amounttopay, _paymeansaddress, _seller) == _message, "Message hashes do not match!");
 		/******* settlement */
 		if ( IERC20( _paymeansaddress ).transferFrom ( msg.sender , address(this) , _amounttopay )){}
 		else {revert("ERR() balance not enough"); }
@@ -258,6 +260,10 @@ contract Matcher_single_simple is // Ownable , Utils  ,//	Interface_to_vault	, /
 	}
 	function prefixed (bytes32 hash) public pure returns (bytes32) {
 		return keccak256(abi.encodePacked("\x19Klaytn Signed Message:\n32", hash));
+	}
+
+	function msgHash (uint256 _tokenid, uint256 _price, address _paymeansaddress, address _seller) public pure returns (bytes32) {
+		return keccak256(abi.encodePacked(_tokenid, _price, _paymeansaddress, _seller));
 	}
 
 	function splitSignature (bytes memory _sig) public pure returns (uint8, bytes32, bytes32) {
