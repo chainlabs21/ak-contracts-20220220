@@ -185,6 +185,11 @@ contract Matcher_single_simple is // Ownable , Utils  ,//	Interface_to_vault	, /
 		require( _seller != address(0) , "ERR() invalid seller" );
 		//***** recovering the seller's address
 		require(recoverSigner(_message, _sell_signature) == _seller, "Sender is not the owner!");
+<<<<<<< HEAD
+=======
+		//***** comparing two message hashes
+		require(msgHash(tokenid, _amounttopay, _paymeansaddress, _seller) == _message, "Message hashes do not match!");
+>>>>>>> bd77f7f20b75af1a8dc639ea857a857c7d12e970
 		/******* settlement */
 		if ( IERC20( _paymeansaddress ).transferFrom ( msg.sender , address(this) , _amounttopay )){}
 		else {revert("ERR() balance not enough"); }
@@ -259,11 +264,26 @@ contract Matcher_single_simple is // Ownable , Utils  ,//	Interface_to_vault	, /
 	function prefixed (bytes32 hash) public pure returns (bytes32) {
 		return keccak256(abi.encodePacked("\x19Klaytn Signed Message:\n32", hash));
 	}
+<<<<<<< HEAD
 	function splitSignature (bytes memory _sig) public pure returns (uint8, bytes32, bytes32) {
 		require(_sig.length == 65);
 		bytes32 r;
 		bytes32 s;
 		uint8 v;
+=======
+
+	function msgHash (uint256 _tokenid, uint256 _price, address _paymeansaddress, address _seller) public pure returns (bytes32) {
+		return keccak256(abi.encodePacked(_tokenid, _price, _paymeansaddress, _seller));
+	}
+
+	function splitSignature (bytes memory _sig) public pure returns (uint8, bytes32, bytes32) {
+		require(_sig.length == 65);
+
+		bytes32 r;
+		bytes32 s;
+		uint8 v;
+
+>>>>>>> bd77f7f20b75af1a8dc639ea857a857c7d12e970
 		assembly {
 			// first 32 bytes, after the length prefix
 			r := mload(add(_sig, 32))
@@ -274,13 +294,27 @@ contract Matcher_single_simple is // Ownable , Utils  ,//	Interface_to_vault	, /
 		}
 		return (v, r, s);
 	}
+<<<<<<< HEAD
+=======
+
+	
+
+>>>>>>> bd77f7f20b75af1a8dc639ea857a857c7d12e970
 	function recoverSigner (bytes32 message, bytes memory _sig) public pure returns (address) {
 		uint8 v;
 		bytes32 r;
 		bytes32 s;
 		bytes32 dehashed_message;
+<<<<<<< HEAD
 		(dehashed_message) = prefixed(message);
 		(v, r, s) = splitSignature(_sig);
+=======
+
+		(dehashed_message) = prefixed(message);
+
+		(v, r, s) = splitSignature(_sig);
+
+>>>>>>> bd77f7f20b75af1a8dc639ea857a857c7d12e970
 		return ecrecover(dehashed_message, v, r, s);
 	}
 
@@ -332,4 +366,8 @@ contract Matcher_single_simple is // Ownable , Utils  ,//	Interface_to_vault	, /
 			, msg.sender // 8
 			, saledata._referer // 9
 		)	;
+<<<<<<< HEAD
 	} */
+=======
+	} */
+>>>>>>> bd77f7f20b75af1a8dc639ea857a857c7d12e970
